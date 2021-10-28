@@ -3,18 +3,18 @@ import { alpha, makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
-import InputBase from '@material-ui/core/InputBase';
 import Badge from '@material-ui/core/Badge';
 import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 import MenuIcon from '@material-ui/icons/Menu';
-import SearchIcon from '@material-ui/icons/Search';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import MailIcon from '@material-ui/icons/Mail';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import MoreIcon from '@material-ui/icons/MoreVert';
-import SearchSuggestion from './SearchSuggestion';
+import { Divider, List, ListItem, ListItemIcon, ListItemText, Typography } from "@material-ui/core";
+import SearchUi from './SearchUi';
+import LinkIcon from '@material-ui/icons/Link';
+import { useHistory } from 'react-router';
 
 const useStyles = makeStyles((theme) => ({
     grow: {
@@ -82,32 +82,10 @@ const useStyles = makeStyles((theme) => ({
 
 const HeaderSection = () => {
     const classes = useStyles();
-
-    const contacts = SearchSuggestion;
+    const history = useHistory();
 
     const [anchorEl, setAnchorEl] = useState(null);
     const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [searchResults, setSearchResults] = useState([]);
-
-    const searchHandler = (term) => {
-        setSearchTerm(term);
-        if (term !== "") {
-            const newContactList = contacts.filter((contact) => {
-                return Object.values(contact)
-                    .join(" ")
-                    .toLowerCase()
-                    .includes(term.toLowerCase());
-            });
-            setSearchResults(newContactList);
-        } else {
-            setSearchResults([]);
-        }
-    };
-
-    const getSearchTerm = (e) => {
-        searchHandler(e.target.value);
-    };
 
     const isMenuOpen = Boolean(anchorEl);
     const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
@@ -186,77 +164,109 @@ const HeaderSection = () => {
         </Menu>
     );
 
-    console.log({ searchResults });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+
+    const handleSearchSubmit = (event) => {
+        setSearchResults(event);
+        setSearchResultsOpen(true);
+    };
+
+    const handleListClick = (pageUrl) => {
+        setSearchResultsOpen(false);
+        setSearchTerm('');
+        history.push(pageUrl);
+    };
+
+    const renderContactList = searchResults.map((contact) => {
+        return (
+            <ListItem button key={contact.id} onClick={() => handleListClick(contact.link)}>
+                <ListItemIcon>
+                    <LinkIcon />
+                </ListItemIcon>
+                <ListItemText primary={contact.name} secondary={contact.email} />
+            </ListItem>
+        );
+    });
 
     return (
-        <div className={classes.grow}>
-            <AppBar position="sticky">
-                <Toolbar>
-                    <IconButton
-                        edge="start"
-                        className={classes.menuButton}
-                        color="inherit"
-                        aria-label="open drawer"
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography className={classes.title} variant="h6" noWrap>
-                        Material-UI
-                    </Typography>
-                    <div className={classes.search}>
-                        <div className={classes.searchIcon}>
-                            <SearchIcon />
-                        </div>
-                        <InputBase
-                            type="text"
-                            placeholder="Search Contacts"
-                            value={searchTerm}
-                            onChange={getSearchTerm}
-                            classes={{
-                                root: classes.inputRoot,
-                                input: classes.inputInput,
-                            }}
-                            inputProps={{ 'aria-label': 'search' }}
+        <div>
+            <div className={classes.grow}>
+                <AppBar position="sticky">
+                    <Toolbar>
+                        <IconButton
+                            edge="start"
+                            className={classes.menuButton}
+                            color="inherit"
+                            aria-label="open drawer"
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography className={classes.title} variant="h6">
+                            Material-UI
+                        </Typography>
+                        <SearchUi
+                            handleSearchSubmit={handleSearchSubmit}
+                            searchTerm={searchTerm}
+                            setSearchTerm={setSearchTerm}
+                            searchResults={searchResults}
+                            setSearchResults={setSearchResults}
                         />
+                        <div className={classes.grow} />
+                        <div className={classes.sectionDesktop}>
+                            <IconButton aria-label="show 4 new mails" color="inherit">
+                                <Badge badgeContent={4} color="secondary">
+                                    <MailIcon />
+                                </Badge>
+                            </IconButton>
+                            <IconButton aria-label="show 17 new notifications" color="inherit">
+                                <Badge badgeContent={17} color="secondary">
+                                    <NotificationsIcon />
+                                </Badge>
+                            </IconButton>
+                            <IconButton
+                                edge="end"
+                                aria-label="account of current user"
+                                aria-controls={menuId}
+                                aria-haspopup="true"
+                                onClick={handleProfileMenuOpen}
+                                color="inherit"
+                            >
+                                <AccountCircle />
+                            </IconButton>
+                        </div>
+                        <div className={classes.sectionMobile}>
+                            <IconButton
+                                aria-label="show more"
+                                aria-controls={mobileMenuId}
+                                aria-haspopup="true"
+                                onClick={handleMobileMenuOpen}
+                                color="inherit"
+                            >
+                                <MoreIcon />
+                            </IconButton>
+                        </div>
+                    </Toolbar>
+                </AppBar>
+                {renderMobileMenu}
+                {renderMenu}
+            </div>
+            {
+                searchResultsOpen ?
+                    <div style={{ minHeight: '100vh' }}>
+                        {renderContactList.length > 0
+                            ? <List component="nav" >
+                                {renderContactList}
+                                <Divider />
+                            </List>
+                            :
+                            <Typography variant="h6" color="error" align="center">Search Result Not Available</Typography>
+                        }
                     </div>
-                    <div className={classes.grow} />
-                    <div className={classes.sectionDesktop}>
-                        <IconButton aria-label="show 4 new mails" color="inherit">
-                            <Badge badgeContent={4} color="secondary">
-                                <MailIcon />
-                            </Badge>
-                        </IconButton>
-                        <IconButton aria-label="show 17 new notifications" color="inherit">
-                            <Badge badgeContent={17} color="secondary">
-                                <NotificationsIcon />
-                            </Badge>
-                        </IconButton>
-                        <IconButton
-                            edge="end"
-                            aria-label="account of current user"
-                            aria-controls={menuId}
-                            aria-haspopup="true"
-                            onClick={handleProfileMenuOpen}
-                            color="inherit"
-                        >
-                            <AccountCircle />
-                        </IconButton>
-                    </div>
-                    <div className={classes.sectionMobile}>
-                        <IconButton
-                            aria-label="show more"
-                            aria-controls={mobileMenuId}
-                            aria-haspopup="true"
-                            onClick={handleMobileMenuOpen}
-                            color="inherit"
-                        >
-                            <MoreIcon />
-                        </IconButton>
-                    </div>
-                </Toolbar>
-            </AppBar>
-            {renderMobileMenu}
-            {renderMenu}
+                    :
+                    ""
+            }
         </div>
     );
 }
